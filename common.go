@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+
 	//"internal/cpu"
 	"io"
 	"math/big"
@@ -34,12 +35,20 @@ const (
 )
 
 const (
-	maxPlaintext       = 1024        // maximum plaintext payload length
-	maxCiphertext      = maxPlaintext + 1024 // maximum ciphertext payload length
-	maxCiphertextTLS13 = maxPlaintext + 256  // maximum ciphertext length in TLS 1.3
-	recordHeaderLen    = 5            // record header length
-	maxHandshake       = 65536        // maximum handshake we support (protocol max is 16 MB)
-	maxUselessRecords  = 16           // maximum number of consecutive non-advancing records
+	// Use asymmetric limits so that clients can send (virtually) unbounded records,
+	// without bombarding said clients with huge records across many fragments.
+
+	maxSendPlaintext       = 1024                    // maximum send plaintext payload length
+	maxSendCiphertext      = maxSendPlaintext + 1024 // maximum send ciphertext payload length
+	maxSendCiphertextTLS13 = maxSendPlaintext + 256  // maximum send ciphertext length in TLS 1.3
+
+	maxRecvPlaintext       = 16384                   // maximum recv plaintext payload length
+	maxRecvCiphertext      = maxRecvPlaintext + 2048 // maximum recv ciphertext payload length
+	maxRecvCiphertextTLS13 = maxRecvPlaintext + 256  // maximum recv ciphertext length in TLS 1.3
+
+	recordHeaderLen   = 5     // record header length
+	maxHandshake      = 65536 // maximum handshake we support (protocol max is 16 MB)
+	maxUselessRecords = 16    // maximum number of consecutive non-advancing records
 )
 
 // TLS record types.
