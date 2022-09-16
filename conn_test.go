@@ -194,10 +194,17 @@ func runDynamicRecordSizingTest(t *testing.T, config *Config) {
 	<-handshakeDone
 
 	// The server writes these plaintexts in order.
+	minPlaintextLimit := func() int {
+		if maxRecvPlaintext < maxSendPlaintext {
+			return maxRecvPlaintext
+		} else {
+			return maxSendPlaintext
+		}
+	}()
 	plaintext := bytes.Join([][]byte{
 		bytes.Repeat([]byte("x"), recordSizeBoostThreshold),
-		bytes.Repeat([]byte("y"), maxPlaintext*2),
-		bytes.Repeat([]byte("z"), maxPlaintext),
+		bytes.Repeat([]byte("y"), minPlaintextLimit*2),
+		bytes.Repeat([]byte("z"), minPlaintextLimit),
 	}, nil)
 
 	if _, err := tlsConn.Write(plaintext); err != nil {
@@ -217,17 +224,17 @@ func runDynamicRecordSizingTest(t *testing.T, config *Config) {
 	recordSizes = recordSizes[:len(recordSizes)-2]
 
 	// recordSizes should contain a series of records smaller than
-	// tcpMSSEstimate followed by some larger than maxPlaintext.
+	// tcpMSSEstimate followed by some larger than maxSendPlaintext.
 	seenLargeRecord := false
 	for i, size := range recordSizes {
 		if !seenLargeRecord {
 			if size > (i+1)*tcpMSSEstimate {
 				t.Fatalf("Record #%d has size %d, which is too large too soon", i, size)
 			}
-			if size >= maxPlaintext {
+			if size >= minPlaintextLimit {
 				seenLargeRecord = true
 			}
-		} else if size <= maxPlaintext {
+		} else if size <= minPlaintextLimit {
 			t.Fatalf("Record #%d has size %d but should be full sized", i, size)
 		}
 	}

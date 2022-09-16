@@ -395,7 +395,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 			if typ != recordTypeApplicationData {
 				return nil, 0, alertUnexpectedMessage
 			}
-			if len(plaintext) > maxPlaintext+1 {
+			if len(plaintext) > maxRecvPlaintext+1 {
 				return nil, 0, alertRecordOverflow
 			}
 			// Remove padding and find the ContentType scanning from the end.
@@ -646,7 +646,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 			return c.in.setErrorLocked(c.newRecordHeaderError(c.conn, "first record does not look like a TLS handshake"))
 		}
 	}
-	if c.vers == VersionTLS13 && n > maxCiphertextTLS13 || n > maxCiphertext {
+	if c.vers == VersionTLS13 && n > maxRecvCiphertextTLS13 || n > maxRecvCiphertext {
 		c.sendAlert(alertRecordOverflow)
 		msg := fmt.Sprintf("oversized record received with length %d", n)
 		return c.in.setErrorLocked(c.newRecordHeaderError(nil, msg))
@@ -664,7 +664,7 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 	if err != nil {
 		return c.in.setErrorLocked(c.sendAlert(err.(alert)))
 	}
-	if len(data) > maxPlaintext {
+	if len(data) > maxRecvPlaintext {
 		return c.in.setErrorLocked(c.sendAlert(alertRecordOverflow))
 	}
 
@@ -861,11 +861,11 @@ const (
 // to reset the record size once the connection is idle, however.
 func (c *Conn) maxPayloadSizeForWrite(typ recordType) int {
 	if c.config.DynamicRecordSizingDisabled || typ != recordTypeApplicationData {
-		return maxPlaintext
+		return maxSendPlaintext
 	}
 
 	if c.bytesSent >= recordSizeBoostThreshold {
-		return maxPlaintext
+		return maxSendPlaintext
 	}
 
 	// Subtract TLS overheads to get the maximum payload size.
@@ -896,12 +896,12 @@ func (c *Conn) maxPayloadSizeForWrite(typ recordType) int {
 	pkt := c.packetsSent
 	c.packetsSent++
 	if pkt > 1000 {
-		return maxPlaintext // avoid overflow in multiply below
+		return maxSendPlaintext // avoid overflow in multiply below
 	}
 
 	n := payloadBytes * int(pkt+1)
-	if n > maxPlaintext {
-		n = maxPlaintext
+	if n > maxSendPlaintext {
+		n = maxSendPlaintext
 	}
 	return n
 }
