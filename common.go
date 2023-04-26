@@ -242,6 +242,7 @@ type ConnectionState struct {
 	VerifiedChains              [][]*x509.Certificate // verified chains built from PeerCertificates
 	SignedCertificateTimestamps [][]byte              // SCTs from the peer, if any
 	OCSPResponse                []byte                // stapled OCSP response from peer, if any
+	PSKID                       string                // Client PSK ID (server side only)
 
 	// ekm is a closure exposed via ExportKeyingMaterial.
 	ekm func(label string, context []byte, length int) ([]byte, error)

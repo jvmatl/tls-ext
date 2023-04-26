@@ -107,6 +107,9 @@ type Conn struct {
 	// in Conn.Write.
 	activeCall int32
 
+	// pskID is the ID of preshared key of the client (server side only)
+	pskID string
+
 	tmp [16]byte
 }
 
@@ -583,12 +586,14 @@ func (c *Conn) readChangeCipherSpec() error {
 
 // readRecordOrCCS reads one or more TLS records from the connection and
 // updates the record layer state. Some invariants:
-//   * c.in must be locked
-//   * c.input must be empty
+//   - c.in must be locked
+//   - c.input must be empty
+//
 // During the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.in.changeCipherSpec is called
 //   - an error is returned
+//
 // After the handshake one and only one of the following will happen:
 //   - c.hand grows
 //   - c.input is set
@@ -1397,6 +1402,7 @@ func (c *Conn) ConnectionState() ConnectionState {
 		state.VerifiedChains = c.verifiedChains
 		state.SignedCertificateTimestamps = c.scts
 		state.OCSPResponse = c.ocspResponse
+		state.PSKID = c.pskID
 		if !c.didResume && c.vers != VersionTLS13 {
 			if c.clientFinishedIsFirst {
 				state.TLSUnique = c.clientFinished[:]
