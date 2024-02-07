@@ -117,6 +117,11 @@ type Conn struct {
 // Cannot just embed net.Conn because that would
 // export the struct field too.
 
+// NetConn returns the underlying net.Conn
+func (c *Conn) NetConn() net.Conn {
+	return c.conn
+}
+
 // LocalAddr returns the local network address.
 func (c *Conn) LocalAddr() net.Addr {
 	return c.conn.LocalAddr()
